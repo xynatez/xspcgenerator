@@ -117,7 +117,7 @@ function base64UrlEncode(u8) {
   for (let i=0; i<u8.length; i+=chunk) {
     bin += String.fromCharCode.apply(null, u8.subarray(i, i+chunk));
   }
-  const b64 = btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const b64 = btoa(bin).replace(/\+/g,'-').replace(/\//g,'_');
   return b64;
 }
 
@@ -214,26 +214,31 @@ async function generateDummyPositions(length, seed) {
 }
 
 function insertDummies(data, positions) {
-  const out = new Uint8Array(data.length + positions.length);
-  let j = 0, p = 0;
-  for (let i=0; i<out.length; i++) {
-    if (p < positions.length && positions[p] === j) {
-      // insert one random dummy byte
-      out[i] = crypto.getRandomValues(new Uint8Array(1))[0];
-      p++;
-    } else {
-      out[i] = data[j++];
+  // Match Python spec: insert at fixed indices on a growing array.
+  const arr = Array.from(data);
+  const sorted = positions.slice().sort((a,b)=>a-b);
+  for (const pos of sorted) {
+    if (pos <= arr.length) {
+      const rnd = crypto.getRandomValues(new Uint8Array(1))[0];
+      arr.splice(pos, 0, rnd);
     }
   }
-  return out;
+  return new Uint8Array(arr);
 }
 
+
 function removeDummies(data, positions) {
-  const pos = positions.slice().sort((a,b)=>b-a); // reverse
+  // positions are indexes in the ORIGINAL ciphertext (pre-dummy)
+  // In the array WITH dummies, the i-th dummy is at index positions[i] + i (0-based, positions sorted asc).
+  const pos = positions.slice().sort((a,b)=>a-b);
   const arr = Array.from(data);
-  for (const p of pos) {
-    if (p >= 0 && p < arr.length) arr.splice(p, 1);
+  for (let i = pos.length - 1; i >= 0; i--) {
+    const idx = pos[i] + i;
+    if (idx < 0 || idx >= arr.length) continue;
+    arr.splice(idx, 1);
   }
+  return new Uint8Array(arr);
+}
   return new Uint8Array(arr);
 }
 
