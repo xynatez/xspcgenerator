@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XSPC‑256 Generator — Encrypt & Decrypt (Frontend Only)</title>
+  <meta name="color-scheme" content="dark light">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <div class="logo">✦</div>
+      <div class="title">
+        <h1>XSPC‑256 Generator</h1>
+        <p class="subtitle">Pure Frontend • AES‑GCM • PBKDF2‑SHA256 • HMAC‑DRBG • Dummy Insertion</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Mode">
+      <button class="tab active" id="tab-encrypt" data-target="#panel-encrypt" role="tab" aria-selected="true">Encrypt</button>
+      <button class="tab" id="tab-decrypt" data-target="#panel-decrypt" role="tab" aria-selected="false">Decrypt</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="panel active" id="panel-encrypt" role="tabpanel" aria-labelledby="tab-encrypt">
+      <div class="card">
+        <h2>Encrypt</h2>
+        <label class="field">
+          <span>Token / Teks</span>
+          <textarea id="enc-token" placeholder="Masukkan token, API key, atau teks yang ingin dienkripsi"></textarea>
+        </label>
+        <label class="field">
+          <span>Passphrase</span>
+          <input id="enc-pass" type="password" placeholder="Masukkan passphrase kuat" />
+        </label>
+        <div class="actions">
+          <button id="btn-encrypt" class="btn primary">Encrypt</button>
+          <button id="btn-clear-enc" class="btn">Clear</button>
+        </div>
+        <div class="output">
+          <label class="field">
+            <span>Hasil Ciphertext (Base64URL)</span>
+            <textarea id="enc-out" readonly placeholder="Hasil akan muncul di sini"></textarea>
+          </label>
+          <div class="actions">
+            <button id="btn-copy-enc" class="btn">Copy</button>
+            <button id="btn-download-enc" class="btn">Download .xspc</button>
+          </div>
+        </div>
+        <details class="details">
+          <summary>Detail Teknis</summary>
+          <ul>
+            <li>Salt: 16 byte</li>
+            <li>PBKDF2‑HMAC‑SHA256: 100.000 iterasi → kunci 256‑bit</li>
+            <li>PRNG deterministik: HMAC‑DRBG (SHA‑256)</li>
+            <li>Pre‑XOR: token ⊕ keystream</li>
+            <li>AEAD: AES‑GCM (IV 12 byte, tag 128‑bit)</li>
+            <li>Dummy insertion: rasio ≈ 0.15, posisi dari seed deterministik</li>
+            <li>Checksum: CRC32 atas ciphertext <em>sebelum</em> dummy</li>
+            <li>Kemasan: salt(16) | iv(12) | count(2) | pos(2×count) | crc32(4) | CT+dummy → Base64URL</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-decrypt" role="tabpanel" aria-labelledby="tab-decrypt">
+      <div class="card">
+        <h2>Decrypt</h2>
+        <label class="field">
+          <span>Ciphertext (Base64URL)</span>
+          <textarea id="dec-blob" placeholder="Tempel ciphertext di sini (whitespace akan diabaikan)"></textarea>
+        </label>
+        <label class="field">
+          <span>Passphrase</span>
+          <input id="dec-pass" type="password" placeholder="Masukkan passphrase yang benar" />
+        </label>
+        <div class="actions">
+          <button id="btn-decrypt" class="btn primary">Decrypt</button>
+          <button id="btn-clear-dec" class="btn">Clear</button>
+        </div>
+        <div class="output">
+          <label class="field">
+            <span>Hasil Plaintext</span>
+            <textarea id="dec-out" readonly placeholder="Hasil akan muncul di sini"></textarea>
+          </label>
+          <div class="actions">
+            <button id="btn-copy-dec" class="btn">Copy</button>
+          </div>
+        </div>
+        <details class="details">
+          <summary>Catatan</summary>
+          <ul>
+            <li>Jika checksum mismatch, data dianggap rusak/tidak otentik sebelum dekripsi.</li>
+            <li>Passphrase harus sama persis dengan saat enkripsi.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Frontend‑only cryptography demo • XSPC‑256 • Made for modern browsers (secure context: HTTPS/localhost)</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
